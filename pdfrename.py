@@ -1,10 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """
 Rename a PDF with information taken from its metadata.
 """
 
 import argparse
 import datetime
+import chardet
 import os
 import re
 import time
@@ -14,27 +15,9 @@ from pdfminer.pdfdocument import PDFDocument
 
 sep = '_'
 
-
-def truncate(s):
-    """
-    str -> str
-    Take a string and return a string consisting of the initial capitals
-    >>> truncate('Philosophy of Language and Mind')
-    'PLM'
-    >>> truncate('Semantics and Philosophy in Europe 8')
-    'SPE8'
-    """
-    parts = s.split()
-    initials = []
-    for part in parts:
-        if part[0].isupper() or part[0].isdigit():
-            initials.append(part[0])
-    return ''.join(initials)
-
-
 def makesafe(s):
     """
-    Make a safe filename by replacing spaces with a separator, and removing nin-word characters.
+    Make a safe filename by replacing spaces with a separator, and removing non-word characters.
     >>> makesafe('Foo bar?')
     'Foo_bar'
     """
@@ -58,19 +41,13 @@ if __name__ == "__main__":
         parser = PDFParser(pdf)
         doc = PDFDocument(parser)
     try:
-        author = doc.info[0]['Author']
+        author = doc.info[0]['Author'].decode(chardet.detect(doc.info[0]['Author'])['encoding'])
     except KeyError:
         author = ''
     try:
-        if '-' in doc.info[0]['Title']:
-            title = doc.info[0]['Title'].split('-')[0].strip()
-            subtitle = doc.info[0]['Title'].split('-')[1].strip()
-        else:
-            title = doc.info[0]['Title']
-            subtitle = ''
+        title = doc.info[0]['Title'].decode(chardet.detect(doc.info[0]['Title'])['encoding'])
     except KeyError:
         title = ''
-        subtitle = ''
     parts = []
     if args.prepend:
         parts.append(makesafe(args.prepend))
@@ -81,13 +58,13 @@ if __name__ == "__main__":
             parts.append(makesafe(author))
     if title:
         parts.append(makesafe(title))
-    if subtitle:
-        if args.truncate:
-            parts.append(truncate(makesafe(subtitle)))
-        else:
-            parts.append(makesafe(subtitle))
     if args.date:
-        parts.append(time.strftime('%Y%m%d'))
+        try:
+            date = doc.info[0]['CreationDate'].decode(chardet.detect(doc.info[0]['CreationDate'])['encoding'])[2:10]
+        except KeyError:
+            date = ''
+        if date:
+            parts.append(date)
     if args.getdate:
         with open(args.getdate) as f:
             for line in f.readlines():
