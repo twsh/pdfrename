@@ -42,11 +42,11 @@ if __name__ == "__main__":
         doc = PDFDocument(parser)
     try:
         author = doc.info[0]['Author'].decode(chardet.detect(doc.info[0]['Author'])['encoding'])
-    except KeyError:
+    except TypeError:
         author = ''
     try:
         title = doc.info[0]['Title'].decode(chardet.detect(doc.info[0]['Title'])['encoding'])
-    except KeyError:
+    except TypeError:
         title = ''
     parts = []
     if args.prepend:
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     if args.date:
         try:
             date = doc.info[0]['CreationDate'].decode(chardet.detect(doc.info[0]['CreationDate'])['encoding'])[2:10]
-        except KeyError:
+        except TypeError:
             date = ''
         if date:
             parts.append(date)
