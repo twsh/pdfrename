@@ -8,12 +8,12 @@ import datetime
 import chardet
 import os
 import re
+import sys
 import time
 
 from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfdocument import PDFDocument
 
-sep = '_'
 
 def makesafe(s):
     """
@@ -21,9 +21,10 @@ def makesafe(s):
     >>> makesafe('Foo bar?')
     'Foo_bar'
     """
-    no_spaces = re.sub('\s+', sep, s)
-    safe = re.sub('\W', '', no_spaces)
-    return safe
+    s = re.sub('\s+', '_', s)
+    s = re.sub('\W', '', s)
+    s = re.sub('_{2,}', '_', s)
+    return s
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -36,10 +37,22 @@ if __name__ == "__main__":
     parser.add_argument('--prepend')
     parser.add_argument('--append')
     args = parser.parse_args()
-    target = args.target
-    with open(target, 'rb') as pdf:
-        parser = PDFParser(pdf)
-        doc = PDFDocument(parser)
+    if os.path.splitext(args.target)[1].lower() == '.pdf':
+        target = args.target
+    elif os.path.splitext(args.target)[1] == '':
+        target = args.target + '.pdf'
+    elif os.path.splitext(args.target)[1] == '.':
+        target = args.target + 'pdf'
+    else:
+        print('You can only use pdfrename with PDFs.')
+        sys.exit()
+    try:
+        with open(target, 'rb') as pdf:
+            parser = PDFParser(pdf)
+            doc = PDFDocument(parser)
+    except FileNotFoundError:
+        print('The file {} for could not be found.'.format(target))
+        sys.exit()
     try:
         author = doc.info[0]['Author'].decode(chardet.detect(doc.info[0]['Author'])['encoding'])
     except TypeError:
@@ -74,7 +87,7 @@ if __name__ == "__main__":
     if args.append:
         parts.append(makesafe(args.append))
     if parts:
-        new_name = sep.join(parts)
+        new_name = '_'.join(parts)
         os.rename(target, '{}.pdf'.format(new_name))
         if args.verbose:
             print(
