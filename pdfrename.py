@@ -51,7 +51,7 @@ if __name__ == "__main__":
             parser = PDFParser(pdf)
             doc = PDFDocument(parser)
     except FileNotFoundError:
-        print('The file {} for could not be found.'.format(target))
+        print('The file {} could not be found.'.format(target))
         sys.exit()
     try:
         author = doc.info[0]['Author'].decode(chardet.detect(doc.info[0]['Author'])['encoding'])
